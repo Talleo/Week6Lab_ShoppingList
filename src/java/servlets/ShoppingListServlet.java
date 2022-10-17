@@ -14,9 +14,9 @@ import javax.servlet.http.HttpSession;
  */
 public class ShoppingListServlet extends HttpServlet {
 
-    // <editor-fold defaultstate="collapsed" desc="HttpServlet methods. Click on the + sign on the left to edit the code.">
-    /** 
+    /**
      * Handles the HTTP <code>GET</code> method.
+     *
      * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
@@ -24,31 +24,43 @@ public class ShoppingListServlet extends HttpServlet {
      */
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
-        
-        // get the current session
-        HttpSession session = request.getSession();
-        
-        // get the list of strings from the session
-        ArrayList<String> shoppingList = (ArrayList<String>)session.getAttribute("shoppingList");
-        
-        // if there is no list of numbers in the session, create a list
-        if (shoppingList == null)
-            shoppingList = new ArrayList<>();
-        
-        // get the item the user entered
-        // if there is a String, add it to the list
-        if (request.getParameter("item") != null) {
-            String item = request.getParameter("item");
-            shoppingList.add(item);
-            
-            // store the list back into the session
-            session.setAttribute("shoppingList", shoppingList);
-        }
-    } 
+            throws ServletException, IOException {
 
-    /** 
+        // variables
+        HttpSession session = request.getSession();
+        String action = request.getParameter("action");
+        String username = (String) session.getAttribute("username");
+        String loggedOut = (String) session.getAttribute("loggedout");
+
+        // display message if logged out
+        if (loggedOut != null) {
+            request.setAttribute("message",
+                    "You are logged out of the Shopping List web application.");
+        }
+
+        // when user pushes logout button, destroy session and go back to registration page
+        if (action != null && action.equals("logout")) {
+            session.invalidate();
+            session = request.getSession();
+            session.setAttribute("loggedout", "Yep. Logged out alright.");
+            request.setAttribute("message", "You are now logged out of the Shopping List web application.");
+            getServletContext().getRequestDispatcher("/WEB-INF/register.jsp")
+                    .forward(request, response);
+        }
+
+        // if username is valid, go to shoppingList jsp
+        if (username == null || username.equals("")) {
+            getServletContext().getRequestDispatcher("/WEB-INF/register.jsp")
+                    .forward(request, response);
+        } else {
+            getServletContext().getRequestDispatcher("/WEB-INF/shoppingList.jsp")
+                    .forward(request, response);
+        }
+    }
+
+    /**
      * Handles the HTTP <code>POST</code> method.
+     *
      * @param request servlet request
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
@@ -56,9 +68,36 @@ public class ShoppingListServlet extends HttpServlet {
      */
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
-    throws ServletException, IOException {
+            throws ServletException, IOException {
 
+        // variables
+        HttpSession session = request.getSession();
+        String action = request.getParameter("action");
+        String username = request.getParameter("username");
+        ArrayList<String> shoppingCart = new ArrayList();
+        String item = request.getParameter("item");
 
+        if (session.getAttribute("shoppingCart") != null) {
+            shoppingCart = (ArrayList) session.getAttribute("shoppingCart");
+        }
+
+        switch (action) {
+            case "register":
+                session.setAttribute("username", username);
+                response.sendRedirect("ShoppingList");
+                break;
+
+            case "add":
+                shoppingCart.add(item);
+                session.setAttribute("shoppingCart", shoppingCart);
+                response.sendRedirect("ShoppingList");
+                break;
+
+            case "delete":
+                shoppingCart.remove(item);
+                session.setAttribute("shoppingCart", shoppingCart);
+                response.sendRedirect("ShoppingList");
+                break;
+        }
     }
-
 }
